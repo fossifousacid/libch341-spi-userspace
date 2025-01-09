@@ -36,6 +36,10 @@
       default = libpinedio-usb;
     };
 
+    devShells.default = pkgs.mkShell {
+      packages = [ pkgs.cmake pkgs.ninja pkgs.pkg-config self.packages.${system}.pinedio-test ];
+    };
+
     # Run test suite when checking the flake
     checks = 
       rec {
