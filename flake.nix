@@ -11,23 +11,21 @@
     lastModifiedDate = self.lastModifiedDate or self.lastModified or "19700101";
     version = builtins.substring 0 8 lastModifiedDate;
     pkgs = import nixpkgs {inherit system;};
-  in rec
+    mkBuild = attrs: pkgs.stdenv.mkDerivation (attrs // {
+      inherit version;
+      src = ./.;
+      nativeBuildInputs = [ pkgs.cmake pkgs.ninja pkgs.pkg-config ];
+      buildInputs = [ pkgs.libusb1 ];
+    });
+  in 
   {
     
     packages = rec { 
-      libpinedio-usb = pkgs.stdenv.mkDerivation rec {
+      libpinedio-usb = mkBuild {
         pname = "libpinedio-usb";
-        inherit version;
-        src = ./.;
-        nativeBuildInputs = [ pkgs.cmake pkgs.ninja pkgs.pkg-config ];
-        buildInputs = [ pkgs.libusb1 ];
       };
-      pinedio-test = pkgs.stdenv.mkDerivation rec {
+      pinedio-test = mkBuild {
         pname = "pinedio-test";
-        inherit version;
-        src = ./.;
-        nativeBuildInputs = [ pkgs.cmake pkgs.ninja pkgs.pkg-config ];
-        buildInputs = [ pkgs.libusb1 ];
         installPhase = ''
           mkdir -p $out/bin
           cp pinedio-test $out/bin
@@ -37,7 +35,10 @@
     };
 
     devShells.default = pkgs.mkShell {
-      packages = [ pkgs.cmake pkgs.ninja pkgs.pkg-config self.packages.${system}.pinedio-test ];
+      inputsFrom = [
+        self.packages.${system}.pinedio-test
+      ];
+      packages = [ pkgs.git pkgs.nixd pkgs.valgrind ];
     };
 
     # Run test suite when checking the flake
